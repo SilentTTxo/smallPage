@@ -1,0 +1,220 @@
+<!-- <a href='./calculator'>calculator</a>  
+<a href='./deadline'>deadline</a>  
+<a href='./hla'>hla</a>  
+<a href='./myBlog'>myBlog</a>   -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <title>xo index</title>
+</head>
+<style type="text/css">
+    * {
+        margin: 0;
+        padding: 0;
+    }
+
+    canvas {
+        display: block;
+        background: #333333;
+    }
+
+    html,
+    body,
+    canvas {
+        width: 100%;
+        height: 100%;
+    }
+
+    .chooseBox {
+        position: absolute;
+        z-index: 10;
+        top: 40%;
+        left: 30%;
+        width: 480px;
+        display: flex;
+    }
+
+    .activeItem {
+        border:white solid 2px;
+    }
+
+    .chooseItem {
+        width: 120px;
+        height: 60px;
+        margin: 20px;
+        text-align: center;
+        border:#33333300 solid 2px;
+        transition: all .5s;
+        z-index: 10;
+    }
+
+    .chooseItem:hover {
+        width: 120px;
+        height: 60px;
+        margin: 20px;
+        text-align: center;
+        background: #333333;
+        border:white solid 2px;
+        
+    }
+
+    a {
+        line-height: 60px;
+        color: white;
+        text-decoration: none;
+    }
+</style>
+
+<body>
+    <canvas id="bgCanvas"></canvas>
+    <div class="chooseBox">
+        <div class="chooseItem">
+            <a href="./calculator">计算器</a>
+        </div>
+        <div class="chooseItem">
+            <a href="./deadline">截止日期</a>
+        </div>
+        <div class="chooseItem">
+            <a href="./hla">哗啦哗啦</a>
+        </div>
+        <div class="chooseItem">
+            <a href="./myBlog">博客</a>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var cxt = "";
+        var pointList = [];
+        var deltaTime = 0.02;
+        var focusTime = 0.5;
+
+        var Pause;
+        var freeSwitch = true
+        
+
+        var updatePointState = function (point,free) {
+            if (point.x > window.innerWidth || point.x < 0) {
+                point.v[0] *= -1;
+            }
+            if (point.y > window.innerHeight || point.y < 0) {
+                point.v[1] *= -1;
+            }
+
+            point.x = point.x + point.v[0] * deltaTime + point.a * point.direction[0] * deltaTime * deltaTime / 2
+            point.y = point.y + point.v[1] * deltaTime + point.a * point.direction[1] * deltaTime * deltaTime / 2
+
+            point.v[0] = point.v[0] + point.a * point.direction[0] * deltaTime
+            point.v[1] = point.v[1] + point.a * point.direction[1] * deltaTime
+
+            if (free){
+                var ax = rangRandom(-1, 1)
+                var temp = Math.random()
+                var ay = Math.sqrt(1-ax*ax) * (temp - Math.abs(temp))
+                point.direction = [ax, ay]
+            }
+                
+        }
+
+        var clearI = function(clearPause){
+                freeSwitch = true;
+                clearInterval(clearPause);
+                Pause = -1;
+            }
+        var focusPoint = function(x,y){
+            // clearInterval(Action)
+            freeSwitch = false
+            console.log(freeSwitch)
+            $.each(pointList, function (index, item) {
+                var dx = x - item.x
+                var dy = y - item.y
+
+                item.direction = [dx/Math.sqrt(dx*dx + dy*dy),dy/Math.sqrt(dx*dx + dy*dy)]
+                item.v[0] = (dx - point.a * point.direction[0] * focusTime * focusTime / 2)/focusTime
+                item.v[1] = (dy - point.a * point.direction[1] * focusTime * focusTime / 2)/focusTime
+                
+            })
+
+            setTimeout("clearI("+Pause+")",focusTime * 1000)
+        }
+        var getPoint = function () { //x,y,acceleration,velocity
+            var x, y, a, v
+            x = rangRandom(0, window.innerWidth)
+            y = rangRandom(0, window.innerHeight)
+            a = rangRandom(1, 100)
+            v = [rangRandom(-10, 10), rangRandom(-10, 10)]
+            direction = [rangRandom(0, 1), rangRandom(0, 1)]
+            return {
+                x: x,
+                y: y,
+                v: v,
+                a: a,
+                direction: direction
+            }
+        }
+        var initCanvas = function () {
+            var canvas = document.getElementById("bgCanvas")
+            cxt = canvas.getContext("2d")
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+        }
+
+        var drawPoint = function (x, y) {
+            cxt.beginPath();
+            cxt.arc(x, y, 3, 0, 360, false);
+            cxt.fillStyle = "white"; //填充颜色,默认是黑色
+            cxt.fill(); //画实心圆
+            cxt.closePath();
+        }
+
+        var flushPic = function () {
+            initCanvas()
+            // console.log(pointList[0])
+            if (pointList.length == 0) {
+                for (var i = 0; i < 100; i++) {
+                    point = getPoint()
+                    pointList.push(point)
+                }
+            }
+            $.each(pointList, function (index, item) {
+                updatePointState(item,freeSwitch)
+                drawPoint(item.x, item.y)
+            })
+        }
+
+        var rangRandom = function (start, end) {
+            return Math.random() * (end - start) + start
+        }
+
+        var actionBind = function(){
+            $(".chooseItem").bind("mouseenter",function(e){
+                var elment = this.getBoundingClientRect()
+                var x = elment.x + elment.width / 2 
+                var y = elment.y + elment.height / 2 
+                focusPoint(x,y)
+            })
+
+            $(".chooseItem").bind("mouseleave",function(e){
+                if(Pause != -1){
+                    clearInterval(Pause);
+                }
+                Pause = window.setInterval(flushPic, deltaTime * 1000)
+            })
+        }
+
+        $(function () {
+            initCanvas()
+            flushPic()
+            actionBind()
+
+            Pause = window.setInterval(flushPic, deltaTime * 1000)
+        })
+    </script>
+</body>
+
+</html>
